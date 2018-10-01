@@ -70,7 +70,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
     const model = mongoConnection.model(name, thingSchema);
 
     return new Promise((resolve, reject) => {
-      fileExists(project.file, project.version, model)
+      fileExists(project.file, project.version, project.data, model)
         .then(() => {
           resolve();
         })
@@ -80,9 +80,9 @@ module.exports = function createProjectsRepository(mongoConnection) {
     });
   }
 
-  function createDataFileCollection(model) {
+  function createDataFileCollection(model, dataTable) {
     return new Promise((resolve, reject) => {
-      model.collection.insertMany(data, (error, res) => {
+      model.collection.insertMany(dataTable, (error, res) => {
         if (error) reject(error);
         assert.equal(null, error);
         assert.equal(data.length, res.insertedCount);
@@ -119,7 +119,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
     });
   }
 
-  function fileExists(fileName, versionName, model) {
+  function fileExists(fileName, versionName, dataTable, model) {
     return new Promise((resolve, reject) => {
       createDataFileCollection(model)
         .then(res => {
