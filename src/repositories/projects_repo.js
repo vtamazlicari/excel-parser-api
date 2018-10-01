@@ -66,11 +66,12 @@ module.exports = function createProjectsRepository(mongoConnection) {
   const File = mongoConnection.model('File', fileSchema);
 
   async function create(project) {
+    console.log(project);
     const name = randomstring.generate();
     const model = mongoConnection.model(name, thingSchema);
 
     return new Promise((resolve, reject) => {
-      fileExists(project.file, project.version, project.data, model)
+      fileExists(project.file, project.version, data, model)
         .then(() => {
           resolve();
         })
@@ -121,7 +122,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
 
   function fileExists(fileName, versionName, dataTable, model) {
     return new Promise((resolve, reject) => {
-      createDataFileCollection(model)
+      createDataFileCollection(model, dataTable)
         .then(res => {
           const filter = res.ops.map(items => items._id);
           const version = new Version({
@@ -239,7 +240,20 @@ module.exports = function createProjectsRepository(mongoConnection) {
       //   .catch(error => {
       //     reject(error);
       //   });
-      Version.remove({_id: id}).exec();
+      Version.findOneAndRemove({_id: id})
+        .then(response => {
+          console.log(response);
+          File.findOneAndUpdate({_id: {$in: '5bae1524d61f8220241ab44c'}}, {$pull: {versions: response._id}})
+            .then(response => {
+              console.log(response);
+            })
+            .catch(err => {
+              console.error(err);
+            })
+        })
+        .catch(err => {
+          console.error(err);
+        });
       Version.save();
       resolve();
     });
