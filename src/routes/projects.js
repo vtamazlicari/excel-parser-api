@@ -33,7 +33,8 @@ module.exports = function createProjectsRoute(repository) {
 
   router
     .route('/:id')
-    .get(viewVersions);
+    .get(viewVersions)
+    .delete(deleteFile);
 
   router
     .route('/:id/:id')
@@ -55,10 +56,20 @@ module.exports = function createProjectsRoute(repository) {
 
   async function deleteVersion(req, res) {
     await repository.deleteVersion(req.params.id)
-      .then(() => {
+      .then((resolve) => {
         res.sendStatus(200);
       })
-      .catch(() => {
+      .catch((error) => {
+        res.sendStatus(404);
+      });
+  }
+
+  async function deleteFile(req, res) {
+    await repository.deleteFile(req.params.id)
+      .then(resolve => {
+        res.sendStatus(200);
+      })
+      .catch(error => {
         res.sendStatus(404);
       })
   }

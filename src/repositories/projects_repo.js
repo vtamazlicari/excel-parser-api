@@ -3,6 +3,7 @@ const mongoXlsx = require('mongo-xlsx');
 const excelToJson = require('convert-excel-to-json');
 const assert = require('assert');
 const randomstring = require("randomstring");
+mongoose.set('useFindAndModify', false);
 
 const Schema = mongoose.Schema;
 
@@ -28,45 +29,106 @@ const versionSchema = Schema({
   }]
 }, {strict: false, autoIndex: false});
 
-const data = [
-  {
-    code: 'QWERT',
-    clientName: 'project1',
-    projectName: 'project name 1',
-    initialPhase: {
-      comercialOffer: '1',
-      projectLaunchCheckList: '0.23',
-      kickOffMeetingWithClient: '0.1'
-    }
-  },
-  {
-    code: 'FSGDF',
-    clientName: 'project2',
-    projectName: 'project name 2',
-    initialPhase: {
-      comercialOffer: '0.67',
-      projectLaunchCheckList: '0.45',
-      kickOffMeetingWithClient: '0.13'
-    }
-  },
-  {
-    code: 'SDFGFD',
-    clientName: 'project3',
-    projectName: 'project name 3',
-    initialPhase: {
-      comercialOffer: '0.23',
-      projectLaunchCheckList: '0.65',
-      kickOffMeetingWithClient: '0.12'
-    }
-  }
-];
+const data =
+[{
+	"code": "PNST01",
+	"clientName": "project 1",
+	"projectName": "project name 1",
+	"initialPhase": {
+		"comercialOffer": "",
+		"projectLaunchCheckList": "",
+		"kickOffMeetingWithClient": "",
+		"teamReestimation": "",
+		"teamEvaluatedByDT": "",
+		"smPoEvaluatedByDT": "",
+		"teamWithScrumTraining": "",
+		"guepardInvolvedAtProjectStart": ""
+	},
+	"score1": "NA",
+	"status1": "NA",
+	"ongoing": {
+		"team": {
+			"rightSkillLevel": 1,
+			"teamMoodMeanVal": 0.7,
+			"busFactor": 0.5,
+			"teamOkWithClientsBusiness": 1,
+			"teamOkWithProjectsTechnology": 0.8
+		},
+		"customer": {
+			"clientOpenForNew": 1,
+			"noPressureOnTheProject": 1,
+			"goodClientManagement": 0.75
+		},
+		"practices": {
+			"ci": 0,
+			"techDebt": 1,
+			"tdInSteer": 1,
+			"codeReview": 0.75,
+			"codingRules": 1,
+			"testingProcessInPlace": 1,
+			"refactoringPlanned": 0.75
+		}
+	},
+	"score2": 81.66666666666667,
+	"status2": 81.66666666666667,
+	"global": 0.8166666666666668,
+	"updatedAt": "2018-08-26T20:59:36.000Z",
+	"isUpdate": 35.38035266203951,
+	"perMonth": 0.8,
+	"evolution": 0.01666666666666672
+}, {
+	"code": "PNST01",
+	"clientName": "project 1",
+	"projectName": "project name 1",
+	"initialPhase": {
+		"comercialOffer": "",
+		"projectLaunchCheckList": "",
+		"kickOffMeetingWithClient": "",
+		"teamReestimation": "",
+		"teamEvaluatedByDT": "",
+		"smPoEvaluatedByDT": "",
+		"teamWithScrumTraining": "",
+		"guepardInvolvedAtProjectStart": ""
+	},
+	"score1": "NA",
+	"status1": "NA",
+	"ongoing": {
+		"team": {
+			"rightSkillLevel": 1,
+			"teamMoodMeanVal": 0.7,
+			"busFactor": 0.5,
+			"teamOkWithClientsBusiness": 1,
+			"teamOkWithProjectsTechnology": 0.8
+		},
+		"customer": {
+			"clientOpenForNew": 1,
+			"noPressureOnTheProject": 1,
+			"goodClientManagement": 0.75
+		},
+		"practices": {
+			"ci": 0,
+			"techDebt": 1,
+			"tdInSteer": 1,
+			"codeReview": 0.75,
+			"codingRules": 1,
+			"testingProcessInPlace": 1,
+			"refactoringPlanned": 0.75
+		}
+	},
+	"score2": 81.66666666666667,
+	"status2": 81.66666666666667,
+	"global": 0.8166666666666668,
+	"updatedAt": "2018-08-26T20:59:36.000Z",
+	"isUpdate": 35.38035266203951,
+	"perMonth": 0.8,
+	"evolution": 0.01666666666666672
+}];
 
 module.exports = function createProjectsRepository(mongoConnection) {
   const Version = mongoConnection.model('Version', versionSchema);
   const File = mongoConnection.model('File', fileSchema);
 
   async function create(project) {
-    console.log(project);
     const name = randomstring.generate();
     const model = mongoConnection.model(name, thingSchema);
 
@@ -230,50 +292,70 @@ module.exports = function createProjectsRepository(mongoConnection) {
     });
   }
 
+  function deleteFile(idFile) {
+    return new Promise((resolve, reject) => {
+      File.findOneAndDelete({_id: idFile})
+        .then(file => {
+          file.version.forEach((version, index) => {
+            Version.findOneAndDelete({_id: version._id})
+              .then(response => {
+                deleteCollection(response.tableName)
+                  .catch(error => {
+                    reject(error);
+                  });
+              })
+              .catch(error => {
+                reject(error);
+              });
+            if (index === file.version.length - 1) resolve(file);
+          });
+        })
+        .catch(error => {
+          reject(error);
+        })
+    });
+  }
+
   function deleteVersion(id) {
     return new Promise((resolve, reject) => {
-      // File.update({version: id}, {$pullAll: {version: [id]}})
-      //   .then(() => {
-      //     resolve();
-      //     Version.save();
-      //   })
-      //   .catch(error => {
-      //     reject(error);
-      //   });
-      Version.findOneAndRemove({_id: id})
-        .then(response => {
-          console.log(response);
-          File.findOneAndUpdate({_id: {$in: '5bb1d9224b65430bb8b2dad3'}}, {$pull: {versions: response._id}})
+      Version.findOneAndDelete({_id: id})
+        .then(version => {
+          File.findOneAndUpdate({version: {$in: [version._id]}}, {$pull: {version: version._id}})
             .then(response => {
-              console.log(response);
+              deleteCollection(version.tableName)
+                .then(response => {
+                  resolve(response);
+                })
+                .catch(error => {
+                  reject(error);
+                });
             })
             .catch(err => {
-              console.error(err);
+              reject(err);
             })
         })
         .catch(err => {
-          console.error(err);
+          reject(err);
         });
-      Version.save();
-      resolve();
     });
   }
 
   function deleteCollection(collectionName) {
-    mongoConnection.db.listCollections({name: collectionName})
-      .next((err, info) => {
-        if (err) {
-          return;
-        }
-        if (info) {
-          console.log(info);
-          mongoConnection.collection(info.name)
-            .drop((err, success) => {
-              if (err) throw err;
-              if (success) console.log('collection delete');
-            });
-        }
-      });
+    return new Promise((resolve, reject) => {
+      mongoConnection.db.listCollections({name: collectionName})
+        .next((err, info) => {
+          if (err) {
+            reject(err);
+          }
+          if (info) {
+            mongoConnection.collection(info.name)
+              .drop((err, success) => {
+                if (err) reject(err);
+                if (success) resolve(success);
+              });
+          }
+        });
+    });
   }
 
   async function generateNameForModel() {
@@ -297,6 +379,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
     getFiles,
     getVersions,
     getModel,
-    deleteVersion
+    deleteVersion,
+    deleteFile
   };
 };
