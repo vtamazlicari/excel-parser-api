@@ -1,0 +1,32 @@
+{
+  "name": "excel-parser",
+  "version": "1.0.0",
+  "description": "excel-parser",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@feathersjs/errors": "^3.3.3",
+    "app-root-path": "^2.1.0",
+    "body-parser": "^1.18.3",
+    "config": "^1.30.0",
+    "convert-excel-to-json": "^1.4.1",
+    "cookie-parser": "~1.4.3",
+    "debug": "~2.6.9",
+    "express": "~4.16.0",
+    "express-session": "^1.15.6",
+    "http-errors": "~1.6.2",
+    "mongo-xlsx": "^1.0.12",
+    "mongoose": "^5.2.15",
+    "morgan": "~1.9.0",
+    "mysql2": "^1.6.1",
+    "node": "^10.6.0",
+    "pug": "2.0.0-beta11",
+    "randomstring": "^1.1.5",
+    "sequelize": "^4.38.1",
+    "sequelize-cli": "^4.1.1",
+    "uuid": "^3.3.2",
+    "winston": "^3.1.0"
+  }
+}

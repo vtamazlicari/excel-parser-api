@@ -1,0 +1,28 @@
+version: '3'
+services:
+  db:
+    container_name: excel_parser
+    image: mysql:5.7
+    ports:
+    - 3306:3306
+    environment:
+    - MYSQL_ROOT_PASSWORD=parola
+  node:
+    container_name: excel_parser_node
+    build: .
+    ports:
+    - 80:8080
+    tty: true
+    links:
+    - db
+    - mongo
+    environment:
+    - MYSQL_URI=mysql://root:parola@db:3306/parser
+    - MONGO_URI=mongodb://mongo:27017/uploads
+    - PORT=8080
+  mongo:
+    container_name: excel_parser_mongo
+    image: mongo:3.0
+    ports:
+    - 27017:27017
+    command: --smallfiles

@@ -1,0 +1,7 @@
+node_modules/
+.vscode/
+logs/
+.idea/
+.vs/
+_ttd_log_/
+rebuild-db.sh
