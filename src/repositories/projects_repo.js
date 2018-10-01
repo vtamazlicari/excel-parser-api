@@ -71,7 +71,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
     const model = mongoConnection.model(name, thingSchema);
 
     return new Promise((resolve, reject) => {
-      fileExists(project.file, project.version, data, model)
+      fileExists(project.file, project.version, project.data, model)
         .then(() => {
           resolve();
         })
@@ -243,7 +243,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
       Version.findOneAndRemove({_id: id})
         .then(response => {
           console.log(response);
-          File.findOneAndUpdate({_id: {$in: '5bae1524d61f8220241ab44c'}}, {$pull: {versions: response._id}})
+          File.findOneAndUpdate({_id: {$in: '5bb1d9224b65430bb8b2dad3'}}, {$pull: {versions: response._id}})
             .then(response => {
               console.log(response);
             })
