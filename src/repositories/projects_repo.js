@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
-const mongoXlsx = require('mongo-xlsx');
-const excelToJson = require('convert-excel-to-json');
 const assert = require('assert');
 const randomstring = require("randomstring");
+const errors = require('@feathersjs/errors');
+
 mongoose.set('useFindAndModify', false);
 
 const Schema = mongoose.Schema;
@@ -29,101 +29,6 @@ const versionSchema = Schema({
   }]
 }, {strict: false, autoIndex: false});
 
-const data =
-[{
-	"code": "PNST01",
-	"clientName": "project 1",
-	"projectName": "project name 1",
-	"initialPhase": {
-		"comercialOffer": "",
-		"projectLaunchCheckList": "",
-		"kickOffMeetingWithClient": "",
-		"teamReestimation": "",
-		"teamEvaluatedByDT": "",
-		"smPoEvaluatedByDT": "",
-		"teamWithScrumTraining": "",
-		"guepardInvolvedAtProjectStart": ""
-	},
-	"score1": "NA",
-	"status1": "NA",
-	"ongoing": {
-		"team": {
-			"rightSkillLevel": 1,
-			"teamMoodMeanVal": 0.7,
-			"busFactor": 0.5,
-			"teamOkWithClientsBusiness": 1,
-			"teamOkWithProjectsTechnology": 0.8
-		},
-		"customer": {
-			"clientOpenForNew": 1,
-			"noPressureOnTheProject": 1,
-			"goodClientManagement": 0.75
-		},
-		"practices": {
-			"ci": 0,
-			"techDebt": 1,
-			"tdInSteer": 1,
-			"codeReview": 0.75,
-			"codingRules": 1,
-			"testingProcessInPlace": 1,
-			"refactoringPlanned": 0.75
-		}
-	},
-	"score2": 81.66666666666667,
-	"status2": 81.66666666666667,
-	"global": 0.8166666666666668,
-	"updatedAt": "2018-08-26T20:59:36.000Z",
-	"isUpdate": 35.38035266203951,
-	"perMonth": 0.8,
-	"evolution": 0.01666666666666672
-}, {
-	"code": "PNST01",
-	"clientName": "project 1",
-	"projectName": "project name 1",
-	"initialPhase": {
-		"comercialOffer": "",
-		"projectLaunchCheckList": "",
-		"kickOffMeetingWithClient": "",
-		"teamReestimation": "",
-		"teamEvaluatedByDT": "",
-		"smPoEvaluatedByDT": "",
-		"teamWithScrumTraining": "",
-		"guepardInvolvedAtProjectStart": ""
-	},
-	"score1": "NA",
-	"status1": "NA",
-	"ongoing": {
-		"team": {
-			"rightSkillLevel": 1,
-			"teamMoodMeanVal": 0.7,
-			"busFactor": 0.5,
-			"teamOkWithClientsBusiness": 1,
-			"teamOkWithProjectsTechnology": 0.8
-		},
-		"customer": {
-			"clientOpenForNew": 1,
-			"noPressureOnTheProject": 1,
-			"goodClientManagement": 0.75
-		},
-		"practices": {
-			"ci": 0,
-			"techDebt": 1,
-			"tdInSteer": 1,
-			"codeReview": 0.75,
-			"codingRules": 1,
-			"testingProcessInPlace": 1,
-			"refactoringPlanned": 0.75
-		}
-	},
-	"score2": 81.66666666666667,
-	"status2": 81.66666666666667,
-	"global": 0.8166666666666668,
-	"updatedAt": "2018-08-26T20:59:36.000Z",
-	"isUpdate": 35.38035266203951,
-	"perMonth": 0.8,
-	"evolution": 0.01666666666666672
-}];
-
 module.exports = function createProjectsRepository(mongoConnection) {
   const Version = mongoConnection.model('Version', versionSchema);
   const File = mongoConnection.model('File', fileSchema);
@@ -143,18 +48,18 @@ module.exports = function createProjectsRepository(mongoConnection) {
     });
   }
 
-  function createDataFileCollection(model, dataTable) {
+  function createTable(model, dataTable) {
     return new Promise((resolve, reject) => {
       model.collection.insertMany(dataTable, (error, res) => {
         if (error) reject(error);
         assert.equal(null, error);
-        assert.equal(data.length, res.insertedCount);
+        assert.equal(dataTable.length, res.insertedCount);
         resolve(res);
       });
     });
   }
 
-  function createVersionCollection(versionName, version) {
+  function createVersion(versionName, version) {
     return new Promise((resolve, reject) => {
       version.save(error => {
         if (error) reject(error);
@@ -163,7 +68,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
     })
   }
 
-  function createFileCollection(file) {
+  function createFile(file) {
     return new Promise((resolve, reject) => {
       file.save((error) => {
         if (error) reject(error);
@@ -172,9 +77,9 @@ module.exports = function createProjectsRepository(mongoConnection) {
     });
   }
 
-  function updateVersionInFileCollection(version, data) {
+  function addVersionInFile(versionId, data) {
     return new Promise((resolve, reject) => {
-      data.version.push(version);
+      data.version.push(versionId);
       data.save((err) => {
         if (err) reject(err);
         else resolve();
@@ -184,7 +89,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
 
   function fileExists(fileName, versionName, dataTable, model) {
     return new Promise((resolve, reject) => {
-      createDataFileCollection(model, dataTable)
+      createTable(model, dataTable)
         .then(res => {
           const filter = res.ops.map(items => items._id);
           const version = new Version({
@@ -192,13 +97,13 @@ module.exports = function createProjectsRepository(mongoConnection) {
             tableName: model.collection.collectionName,
             version: filter
           });
-          createVersionCollection(versionName, version)
+          createVersion(versionName, version)
             .then(res => {
               const versionId = res._id;
               File.findOne({name: fileName})
                 .then((res) => {
                   if (res) {
-                    updateVersionInFileCollection(versionId, res)
+                    addVersionInFile(versionId, res)
                       .then(() => {
                         resolve();
                       })
@@ -210,7 +115,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
                       name: fileName,
                       version: [versionId]
                     });
-                    createFileCollection(file)
+                    createFile(file)
                       .then(() => {
                         resolve();
                       })
@@ -254,12 +159,12 @@ module.exports = function createProjectsRepository(mongoConnection) {
     })
   }
 
-  async function getVersions(id) {
+  async function getVersions(idFile) {
     let versionByFile = [];
     return new Promise((resolve, reject) => {
-      getVersionsId(id)
+      getVersionsId(idFile)
         .then(versionsFile => {
-          return versionsFile.version.forEach((element, index, array) => {
+          return versionsFile.version.forEach((element, index) => {
             Version.findById(element)
               .then(data => {
                 versionByFile[index] = data;
@@ -267,8 +172,8 @@ module.exports = function createProjectsRepository(mongoConnection) {
               });
           });
         })
-        .catch(error => {
-          reject(error);
+        .catch(() => {
+          reject(new errors.NotFound('FILE_NOT_FOUND'));
         });
     });
   }
@@ -287,7 +192,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
             });
         })
         .catch(error => {
-          reject(error);
+          reject(new errors.NotFound('VERSION_NOT_FOUND'));
         });
     });
   }
@@ -310,18 +215,18 @@ module.exports = function createProjectsRepository(mongoConnection) {
             if (index === file.version.length - 1) resolve(file);
           });
         })
-        .catch(error => {
-          reject(error);
+        .catch(() => {
+          reject(new errors.NotFound('FILE_NOT_FOUND'));
         })
     });
   }
 
-  function deleteVersion(id) {
+  function deleteVersion(idVersion) {
     return new Promise((resolve, reject) => {
-      Version.findOneAndDelete({_id: id})
+      Version.findOneAndDelete({_id: idVersion})
         .then(version => {
           File.findOneAndUpdate({version: {$in: [version._id]}}, {$pull: {version: version._id}})
-            .then(response => {
+            .then(() => {
               deleteCollection(version.tableName)
                 .then(response => {
                   resolve(response);
@@ -334,8 +239,8 @@ module.exports = function createProjectsRepository(mongoConnection) {
               reject(err);
             })
         })
-        .catch(err => {
-          reject(err);
+        .catch(() => {
+          reject(new errors.NotFound('VERSION_NOT_FOUND'));
         });
     });
   }
@@ -353,22 +258,6 @@ module.exports = function createProjectsRepository(mongoConnection) {
                 if (err) reject(err);
                 if (success) resolve(success);
               });
-          }
-        });
-    });
-  }
-
-  async function generateNameForModel() {
-    const name = await randomstring.generate();
-
-    return new Promise((resolve, reject) => {
-      mongoConnection.db.listCollections({name: name})
-        .next((err, info) => {
-          if (err) {
-            reject(err);
-          }
-          if (info == null) {
-            resolve(name);
           }
         });
     });

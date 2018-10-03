@@ -4,17 +4,18 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const logger = require('../src/services/winston/logger');
+const cors = require('cors');
 
 const { FeathersError } = require('@feathersjs/errors');
 
 const createProjectsRoute = require('./routes/projects');
 
-//const importModels = require('./models');
-
 module.exports = function getApp(mongoConnection) {
   const app = express();
 
   const projectsRepository = require('./repositories/projects_repo')(mongoConnection);
+
+  app.use(cors({origin: 'http://localhost:4200'}));
 
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));

@@ -1,9 +1,6 @@
 'use strict'
 
 const express = require('express');
-const errors = require('@feathersjs/errors');
-const config = require('config');
-
 
 module.exports = function createProjectsRoute(repository) {
   const router = express.Router();
@@ -22,14 +19,14 @@ module.exports = function createProjectsRoute(repository) {
       },
     },
     success: {
-      add: 'TABLE_ADD',
-      delete: 'TABLE_DELETED',
+      add: 'ADD_SUCCESS',
+      delete: 'DELETED_SUCCESS',
     },
   };
   router
     .route('/')
     .post(create)
-    .get(list);
+    .get(listFiles);
 
   router
     .route('/:id')
@@ -44,58 +41,61 @@ module.exports = function createProjectsRoute(repository) {
   async function create(req, res, next) {
     await repository.create(req.body)
       .then(() => {
-        res.sendStatus(200);
-      })
-      .catch(error => {
         res.json({
-
+          success: msg.success.add
         });
-        console.error(error);
-      });
+        return next();
+      })
+      .catch(next);
   }
 
-  async function deleteVersion(req, res) {
+  async function deleteVersion(req, res, next) {
     await repository.deleteVersion(req.params.id)
-      .then((resolve) => {
-        res.sendStatus(200);
+      .then(() => {
+        res.json({
+          success: msg.success.delete
+        });
+        return next();
       })
-      .catch((error) => {
-        res.sendStatus(404);
-      });
+      .catch(next);
   }
 
-  async function deleteFile(req, res) {
+  async function deleteFile(req, res, next) {
     await repository.deleteFile(req.params.id)
-      .then(resolve => {
-        res.sendStatus(200);
+      .then(() => {
+        res.json({
+          success: msg.success.delete
+        });
+        return next();
       })
-      .catch(error => {
-        res.sendStatus(404);
-      })
+      .catch(next);
   }
 
-  async function list(req, res) {
+  async function listFiles(req, res, next) {
     await repository.getFiles()
       .then(data => {
-        res.send(data);
+        res.json({data});
+        return next();
       })
-      .catch(console.error);
+      .catch(next);
   }
 
-  async function viewVersions(req, res) {
+  async function viewVersions(req, res, next) {
     await repository.getVersions(req.params.id)
       .then(data => {
-        res.send(data);
+        res.json({data});
+        return next();
       })
-      .catch(console.error);
+      .catch(next);
   }
 
-  async function viewModel(req, res) {
+  async function viewModel(req, res, next) {
     await repository.getModel(req.params.id)
       .then(data => {
-        res.send(data);
+        res.json({data});
+        return next();
       })
-      .catch(console.error);
+      .catch(next);
   }
   return router;
 };
