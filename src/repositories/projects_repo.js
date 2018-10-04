@@ -17,13 +17,13 @@ const thingSchema = new mongoose.Schema({
 
 const fileSchema = Schema({
   name: String,
-  version: [{type: Schema.Types.ObjectId, ref: 'Version'}]
+  versions: [{type: Schema.Types.ObjectId, ref: 'Version'}]
 }, {strict: false, autoIndex: false});
 
 const versionSchema = Schema({
   name: String,
   tableName: String,
-  version: [{
+  table: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'models'
   }]
@@ -79,7 +79,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
 
   function addVersionInFile(versionId, data) {
     return new Promise((resolve, reject) => {
-      data.version.push(versionId);
+      data.versions.push(versionId);
       data.save((err) => {
         if (err) reject(err);
         else resolve();
@@ -95,7 +95,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
           const version = new Version({
             name: versionName,
             tableName: model.collection.collectionName,
-            version: filter
+            table: filter
           });
           createVersion(versionName, version)
             .then(res => {
@@ -113,7 +113,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
                   } else {
                     const file = new File({
                       name: fileName,
-                      version: [versionId]
+                      versions: [versionId]
                     });
                     createFile(file)
                       .then(() => {
@@ -164,11 +164,11 @@ module.exports = function createProjectsRepository(mongoConnection) {
     return new Promise((resolve, reject) => {
       getVersionsId(idFile)
         .then(versionsFile => {
-          return versionsFile.version.forEach((element, index) => {
+          return versionsFile.versions.forEach((element, index) => {
             Version.findById(element)
               .then(data => {
                 versionByFile[index] = data;
-                if (index === versionsFile.version.length - 1) resolve(versionByFile);
+                if (index === versionsFile.versions.length - 1) resolve(versionByFile);
               });
           });
         })
@@ -201,7 +201,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
     return new Promise((resolve, reject) => {
       File.findOneAndDelete({_id: idFile})
         .then(file => {
-          file.version.forEach((version, index) => {
+          file.versions.forEach((version, index) => {
             Version.findOneAndDelete({_id: version._id})
               .then(response => {
                 deleteCollection(response.tableName)
@@ -212,7 +212,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
               .catch(error => {
                 reject(error);
               });
-            if (index === file.version.length - 1) resolve(file);
+            if (index === file.versions.length - 1) resolve(file);
           });
         })
         .catch(() => {
@@ -225,7 +225,7 @@ module.exports = function createProjectsRepository(mongoConnection) {
     return new Promise((resolve, reject) => {
       Version.findOneAndDelete({_id: idVersion})
         .then(version => {
-          File.findOneAndUpdate({version: {$in: [version._id]}}, {$pull: {version: version._id}})
+          File.findOneAndUpdate({versions: {$in: [version._id]}}, {$pull: {versions: version._id}})
             .then(() => {
               deleteCollection(version.tableName)
                 .then(response => {
