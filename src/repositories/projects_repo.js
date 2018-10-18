@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const assert = require('assert');
 const randomstring = require("randomstring");
 const errors = require('@feathersjs/errors');
+const xlsx2json = require('xlsx2json');
+
+const toJson = require('../util/excel-parser');
 
 mongoose.set('useFindAndModify', false);
 
@@ -263,12 +266,17 @@ module.exports = function createProjectsRepository(mongoConnection) {
     });
   }
 
+  function excelToJson(data) {
+    return toJson(data);
+  }
+
   return {
     create,
     getFiles,
     getVersions,
     getModel,
     deleteVersion,
-    deleteFile
+    deleteFile,
+    excelToJson
   };
 };

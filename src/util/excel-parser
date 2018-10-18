@@ -1,0 +1,157 @@
+
+
+function createObject(key, id, parent, children, column) {
+  let obj = {};
+  Object.defineProperties(obj, {
+    'id': {value: id, writable: true, enumerable: true, configurable: true},
+    'parent': {value: parent, writable: true, enumerable: true, configurable: true},
+    'children': {value: children, writable: true, enumerable: true, configurable: true},
+    'column': {value: column, writable: true, enumerable: true, configurable: true}});
+  Object.defineProperty(obj, key, {value: 1, writable: true, enumerable: true, configurable: true});
+  return obj;
+}
+
+function parentGroup(data, iIndex, jIndex) {
+  let group;
+  for (let i = iIndex; i >= 0; i--) {
+    if (data[i][jIndex] !== '') {
+      return true;
+    } else {
+      group = false;
+    }
+  }
+  return group;
+}
+
+function searchParent(arr, id) {
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i].id === id) {
+      return arr[i].id;
+    }
+  }
+  return -1;
+}
+
+function createArrayWithDependence(arbor) {
+  let arr = [];
+  let id = 1;
+  let parent = 0;
+  let parentIdState = [];
+  let curentIdState = [];
+  let count = 0;
+  const length = nrLineInHeaders(arbor);
+  let children = false;
+  for (let i = 0; i < length; i++) {
+    for (let j = 0; j < arbor[i].length; j++) {
+      if (i === 0 && arbor[i][j] !== '' && arbor[i + 1][j] !== '') {
+        parentIdState.push(id);
+      }
+      if (parentGroup(arbor, i - 1, j) && i !== 0 && arbor[i][j] !== '') {
+        parent = searchParent(arr, parentIdState[count]);
+        count++;
+      }
+      if ((i < length && arbor[i][j] !== '' && arbor[i + 1][j] === '') || (i === length - 1)) {
+        children = false;
+      } else {
+        children = true;
+      }
+      if (arbor[i][j] !== '') {
+        arr.push(createObject(arbor[i][j], id, parent, children, j));
+        if (arbor[i + 1][j] !== '') {
+          curentIdState.push(id);
+        }
+        id++;
+      }
+
+    }
+    count = 0;
+    if (i !== 0) {
+      parentIdState = curentIdState;
+    }
+    curentIdState = [];
+  }
+  return arr;
+}
+
+function getNestedChildren(arr, parent) {
+  let out = [];
+  let obj = {};
+  let key;
+  for(let i in arr) {
+    if(arr[i].parent === parent) {
+      let children = getNestedChildren(arr, arr[i].id);
+
+      if(children.length) {
+        obj = {};
+        for (let j = 0; j < children.length; j++) {
+          key = Object.keys(children[j]);
+          delete children[j][key[0]];
+          delete children[j][key[1]];
+          delete children[j][key[2]];
+          delete children[j][key[3]];
+          obj = Object.assign(children[j], obj);
+        }
+        key = Object.keys(arr[i]);
+        arr[i][key[4]] = obj;
+      }
+      out.push(arr[i]);
+    }
+  }
+  return out;
+}
+
+function createNestedObject(arr, parent) {
+  let array = getNestedChildren(arr, parent);
+  let obj = {};
+  for (let i = 0; i < array.length; i++) {
+    let key = Object.keys(arr[i]);
+    delete array[i][key[0]];
+    delete array[i][key[1]];
+    delete array[i][key[2]];
+    delete array[i][key[3]];
+    obj = Object.assign(array[i], obj);
+  }
+  return obj;
+}
+
+function nrLineInHeaders(array) {
+  let countHeaders = 1;
+  let count = 1;
+  for (let j = 0; j < array[0].length; j++) {
+    if (array[0][j] !== '') {
+      for (let i = 1; i < array.length; i++) {
+        if (array[i][j] === '') {
+          count++;
+        } else break;
+      }
+    }
+    if (count > countHeaders) {
+      countHeaders = count;
+    }
+    count = 0;
+  }
+  return countHeaders;
+}
+
+function assignValueToObject(arrayWithObjects, arrayWithValues) {
+  for (let i = 0; i < arrayWithObjects.length; i++) {
+    if (arrayWithObjects[i].children === false) {
+      let key = Object.keys(arrayWithObjects[i]);
+      arrayWithObjects[i][key[4]] = arrayWithValues[arrayWithObjects[i].column];
+    }
+  }
+  return arrayWithObjects;
+}
+
+function parseDataFromExcel(arbor) {
+  let beginValues = nrLineInHeaders(arbor);
+  let finalArray = [];
+  for (let i = beginValues; i < arbor.length; i++) {
+    let arrayWithDependence = createArrayWithDependence(arbor);
+    let arrayWithValues = assignValueToObject(arrayWithDependence, arbor[i]);
+    finalArray.push(createNestedObject(arrayWithValues, 0));
+  }
+  return finalArray;
+}
+
+module.exports = parseDataFromExcel;

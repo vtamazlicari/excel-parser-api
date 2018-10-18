@@ -25,7 +25,7 @@ module.exports = function createProjectsRoute(repository) {
   };
   router
     .route('/')
-    .post(create)
+    .post(toJson)
     .get(listFiles);
 
   router
@@ -37,6 +37,16 @@ module.exports = function createProjectsRoute(repository) {
     .route('/:id/:id')
     .get(viewModel)
     .delete(deleteVersion);
+
+  router
+    .route('/json')
+    .post(toJson);
+
+  async function toJson(req, res, next) {
+    const jsonData = await repository.excelToJson(req.body.data);
+    console.log(jsonData);
+    res.send(jsonData);
+  }
 
   async function create(req, res, next) {
     await repository.create(req.body)
